@@ -1,11 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ExemploTus.Upload;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using tusdotnet;
+using tusdotnet.Interfaces;
+using tusdotnet.Models;
+using tusdotnet.Models.Configuration;
+using tusdotnet.Stores;
 
 namespace ExemploTus
 {
@@ -25,10 +32,34 @@ namespace ExemploTus
                 app.UseDeveloperExceptionPage();
             }
 
-            app.Run(async (context) =>
+            var tempPath = Path.Combine(env.ContentRootPath, "temp");
+
+            CreateDirectory(tempPath);
+            
+            app.UseTus(context => new DefaultTusConfiguration
             {
-                await context.Response.WriteAsync("Hello World!");
+                //Local onde os arquivos temporários serão salvos
+                Store = new TusDiskStore(tempPath),
+                // URL onde os uploads devem ser realizados.
+                UrlPath = "/upload",
+                Events = new Events
+                {
+                    //O que fazer quando o upload for finalizado
+                    OnFileCompleteAsync = async ctx =>
+                    {
+                        var file = await ((ITusReadableStore)ctx.Store).GetFileAsync(ctx.FileId, ctx.CancellationToken);
+                        await ProcessFile.SaveFileAsync(file, env);
+                    }
+                }
             });
+
+            app.UseStaticFiles();
+        }
+
+        private void CreateDirectory(string path)
+        {
+            if(!Directory.Exists(path))
+                Directory.CreateDirectory(path);
         }
     }
 }

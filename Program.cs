@@ -19,6 +19,11 @@ namespace ExemploTus
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>();
+                .UseStartup<Startup>()
+                .ConfigureKestrel(options =>
+                {
+                    options.Limits.MaxRequestBodySize = null;
+                    options.Limits.MaxRequestBufferSize = null;
+                });
     }
 }

@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Upload de arquivo</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="jumbotron jumbotron-fluid">
+        <div class="container">
+            <h1 class="display-4">Upload de arquivo</h1>
+            <p class="lead">
+                Para testar o protocolo, selecione um arquivo e clique em "Upload". Aguarde um pouco cancele, feche o navegador ou atualizado a página e inicie novamente :)
+            </p>
+            <p>
+                <a href="#" onclick="resetLocalCache(event)">Clique aqui para limpar o cache do navegador!</a>
+            </p>
+
+            <form>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="fileUpload" onchange="alterarNome()">
+                    <label class="custom-file-label" for="fileUpload" id="fileUploadLabel">Selecione o arquivo</label>
+                </div>
+                <div class="form-group mt-2 text-right">
+                    <input type="button" id="uploadButton" value="Upload" onclick="uploadFile()" class="btn btn-primary mb-2" />
+                    <input type="button" id="cancelUploadButton" value="Cancelar" onclick="cancelUpload()" class="btn btn-primary mb-2" disabled />
+                </div>
+            </form>
+            <progress value="0" max="100" id="uploadProgress" class="w-100" style="display:none" ></progress>
+            <span id="info"></span>
+        </div>
+    </div>
+    <script src="tus.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script>
+        var uploadProgress = document.getElementById('uploadProgress');
+        var info = document.getElementById('info');
+        var cancelUploadButton = document.getElementById('cancelUploadButton');
+        var uploadButton = document.getElementById('uploadButton');
+        var fileUpload = document.getElementById('fileUpload');
+        var fileUploadLabel = document.getElementById('fileUploadLabel');
+        var upload;
+
+        function uploadFile() {
+            var file = fileUpload.files[0];
+
+            uploadProgress.value = 0;
+            uploadProgress.removeAttribute('data');
+            uploadProgress.style.display = 'block';
+
+            disableUpload();
+
+            info.innerHTML = '';
+
+            upload = new tus.Upload(file,
+                {
+                    endpoint: 'upload/',
+                    onError: onTusError,
+                    onProgress: onTusProgress,
+                    onSuccess: onTusSuccess,
+                    metadata: {
+                        filename: file.name,
+                        contentType: file.type || 'application/octet-stream'
+                    }
+                });
+
+            setProgressTest('Upload iniciado...');
+            upload.start();
+        }
+
+        function cancelUpload() {
+            upload && upload.abort();
+            setProgressTest('Upload abortado');
+            uploadProgress.value = 0;
+            enableUpload();
+        }
+
+        function resetLocalCache(e) {
+            e.preventDefault();
+            localStorage.clear();
+            alert('Cache limpo');
+        }
+
+        function onTusError(error) {
+            alert(error);
+            enableUpload();
+        }
+
+        function onTusProgress(bytesUploaded, bytesTotal) {
+            var percentage = (bytesUploaded / bytesTotal * 100).toFixed(2);
+
+            uploadProgress.value = percentage;
+            setProgressTest(bytesUploaded + '/' + bytesTotal + ' bytes uploado');
+        }
+
+        function onTusSuccess() {
+            setProgressTest('Upload finalizado!');
+            enableUpload();
+        }
+
+        function setProgressTest(text) {
+            info.innerHTML = text;
+        }
+
+        function enableUpload() {
+            uploadButton.removeAttribute('disabled');
+            cancelUploadButton.setAttribute('disabled', 'disabled');
+        }
+
+        function disableUpload() {
+            uploadButton.setAttribute('disabled', 'disabled');
+            cancelUploadButton.removeAttribute('disabled');
+        }
+
+        function alterarNome(){
+            var fileName = fileUpload.files[0].name;
+            fileUploadLabel.innerHTML = fileName;
+        }
+    </script>
+
+</body>
+</html>
